@@ -1,0 +1,65 @@
+<pre>
+  MIP: 0001
+  Layer: Consensus (hard fork)
+  Title: Introduce Burn KernelFeatures, which allow MWC to be provably burned.
+  Author: Severus Snape <Severus_Snape93@protonmail.com>
+  Comments-Summary: No comments yet.
+  Comments-URI: TBD
+  Status: Draft
+  Created: 2021-04-16
+  License: Apache-2
+</pre>
+
+==Abstract==
+
+This MIP (MWC Improvement Proposal) proposes a new KernelFeature (KernelFeatures::Burn). This feature is identical to the KernelFeatures::Plain KernelFeature except that an amount of type u64 is also specified which is the amount burned by this transaction. The transaction and future blocks overage is calculated taking this amount into consideration.
+
+==Motivation==
+
+In recent updates (1 - see footnote), the MWC devs have discussed the use of a p2p network (libp2p) for use with the decentralized swap feature. To avoid sybil attacks, the plan is to require daily payments (i.e. integrity fee) to miners in exchange for being able to use the network. However, with this solution miners can include transactions in their own blocks for free. If proof of burn were possible in MWC, that could be used instead. Therefore we propose Burn Kernels. Burn Kernels may be used for other applications as well and are generally useful in avoiding sybil attacks. This ability to provably burn coins is something that other blockchains have (2 - see footnote) and MWC, in order to reach parity with those blockchains, should consider implementing it as well.
+
+==Specification==
+
+After deployment, a new KernelFeature will be introduced. It will be called "KernelFeatures::Burn". This feature allows MWC to be provably burned. This is achieved by keeping track of cumulative burn in the block header and by adjusting the overage calculation based on the header value and any Burn Kernels in the block. This change requires a hard fork, but may be included in any upcoming hard fork (for instance the proposed NIT hard fork). The KernelFeature enum will have this additional possible value:
+
+    pub enum KernelFeatures {
+        ...
+        /// Burn Kernel feature - provably burned amount specified
+        Burn {
+            /// Burn kernels have fees.
+            #[serde(serialize_with = "fee_fields_as_int")]
+            fee: FeeFields,
+            /// amount burned by this kernel
+            amount: u64,
+        },
+    }
+
+==Deployment==
+
+Deployment shall be controlled by a new header version. As with the previous hard fork in MWC and the other Grin hard forks, it will be user activated. Assuming there is consensus for this feature, mining pools, exchanges, and users will be asked to upgrade to the new version of the full node.
+
+==Test network==
+
+Test network parameters are the same as the main network, except starting earlier. The starting time is to be determined.
+
+==Rationale==
+
+As stated in the motivation section, one of the important use cases of cryptocurrency is sybil prevention. Without the ability to provably burn coins, this is not possible in MWC. We therefore propose implementing this capability to be at parity with other cryptocurrencies like Bitcoin in this area.
+
+==Objections to this proposal==
+
+The main objection would be upgrade cost. However, since another hard fork is planned, if this feature were to be incorporated, that cost would be minimal. An additional objection is, as Grin has asserted, one of the unique features of Grin and MWC and other Mimblewimble based cryptocurrencies, is that it is impossible to provably burn coins and it is much harder to lose coins because you can't send coins to the wrong address. This makes the known supply more stable because there is less speculation about un-spendable coins. That changes with NIT in MWC because sending to the wrong NIT address will be possible. We think that argument is valid, but we see this sybil prevention mechanism as a useful mechanism and therefore it should be implemented. Also, it is unlikely that this feature will be implemented in Grin so implementing in MWC makes sense for differentiation.
+
+==Compatibility==
+
+This is a hard-forking change to the MWC protocol; anybody running code that fully validates blocks must upgrade before the activation time or they will risk accepting a block that has an invalid header version.
+
+==Implementation==
+
+TBD
+
+==References==
+
+https://github.com/mwcproject/mwc-node/blob/master/doc/distributed_messaging.md
+
+https://en.bitcoin.it/wiki/Proof_of_burn

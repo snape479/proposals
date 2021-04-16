@@ -1,0 +1,70 @@
+<pre>
+  WIP: 0001
+  Layer: Consensus (hard fork)
+  Title: Introduce Notarize KernelFeatures, which allow for 40 bytes of notarization data in a Grin block.
+  Author: Severus Snape <Severus_Snape93@protonmail.com>
+  Comments-Summary: No comments yet.
+  Comments-URI: TBD
+  Status: Draft
+  Created: 2021-04-16
+  License: Apache-2
+</pre>
+
+==Abstract==
+
+This WIP (Wimble Improvement Proposal) proposes a new KernelFeature (KernelFeatures::Notarization) type. This kernel feature is identical to KernelFeatures::Plain except that a 40 byte notarization data field is included in the Kernel. This field allows for arbitrary data to be stored in the Kernel which is stored indefinitely by all nodes.
+
+==Motivation==
+
+Notarization (or time-stamping) is an important capability in Blockchains (1 - see footnote). Currently Grin does not support the ability to store arbitrary additional data in a block. Since having the ability to permanently store very small chunks of data in the blockchain has value, we propose adding this feature. In addition, we propose limiting this notarization data to a single 40 byte chunk of data per block which limits the amount of data in a Grin block to a very minimal amount. If the only supported use case of this data storage mechanism is time-stamping/notarization, there is no need to store more than a single checksum per block as multiple checksums may be stored into other data structures that make use of this 40 byte field. The potential applications include proof of existence, naming protocols, asset issuance protocols, non fungible tokens, and others.
+
+==Specification==
+
+After deployment, a new KernelFeature enumeration type will be allowed for transactions. It will be called "KernelFeatures::Notarization". This feature allows Grin kernels to include a 40 byte piece of data. This data can be used to store checksums or other small pieces of data into blocks.
+
+    pub enum KernelFeatures {
+        ...
+        /// Notarization Kernel feature - 40 bytes of additional data attached to a Kernel
+        Notarization {
+                /// Notarization kernels have fees.
+                #[serde(serialize_with = "fee_fields_as_int")]
+                fee: FeeFields,
+                /// Data to notarize.
+                notarization_data: NotarizationData,
+        },
+    }
+
+    pub struct NotarizationData {
+        /// Data to notarize. Must be exactly 40 bytes.
+        pub data: [u8; 40],
+    }
+
+There will be a strict limit of one notarization kernel feature per block.
+
+==Deployment==
+
+Deployment shall be controlled by a new header version. As with the previous hard forks in Grin, it will be user activated. Assuming there is consensus for this feature, mining pools, exchanges, and all other users will be asked to upgrade to the new version of the full node.
+
+==Test network==
+
+Test network parameters are the same as the main network, except starting earlier. The starting time is to be determined.
+
+==Rationale==
+
+As stated in the motivation section, time-stamping is an important application of blockchains. Adding this capability to Grin will create value.
+
+==Objections to this proposal==
+
+The main objection would be upgrade cost. However, since Grin plans to do additional hard forks, this feature may be included in one of them. One might also object that adding 40 bytes of data to a block adds to block size and thus initial download which in turn leads to centralization. While this argument is true, the maximum amount of additional block space used by this feature is around 20 mb per year. We think this amount of growth is acceptable and the benefits outweigh the costs of this feature.
+
+==Compatibility==
+
+This is a hard-forking change to the Grin protocol; anybody running code that fully validates blocks must upgrade before the activation time or they will risk accepting a block that has an invalid header version.
+
+==Implementation==
+
+TBD
+
+==References==
+
+https://kctheservant.medium.com/notarization-in-blockchain-part-1-a9795f19e28d
